@@ -17,8 +17,7 @@ class LogInfoScreen extends StatefulWidget {
 }
 
 class _LogInfoScreenState extends State<LogInfoScreen> {
-  bool _waterPumpState = false;
-  bool _pestPumpState = false;
+  bool _fanState = false;
 
   late MQTTService _service;
 
@@ -37,6 +36,14 @@ class _LogInfoScreenState extends State<LogInfoScreen> {
     super.initState();
   }
 
+  _showVoiceAlert() {
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+              content: SpeechToTextPage(mqttService: _service),
+            ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<MQTTModel>(context);
@@ -51,6 +58,8 @@ class _LogInfoScreenState extends State<LogInfoScreen> {
 
     String temperature = (messageJson["temp"] ?? 0).toString();
     String humidity = (messageJson["hum"] ?? 0).toString();
+
+    _fanState = messageJson["fan"] == 1 ? true : false;
 
     return Scaffold(
       backgroundColor: Colors.blue,
@@ -126,10 +135,9 @@ class _LogInfoScreenState extends State<LogInfoScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               ClickyButton(
-                                color:
-                                    _pestPumpState ? Colors.red : Colors.green,
+                                color: _fanState ? Colors.red : Colors.green,
                                 child: Text(
-                                  _pestPumpState ? "Turn OFF" : "Turn ON",
+                                  _fanState ? "Turn OFF" : "Turn ON",
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 24,
@@ -138,16 +146,16 @@ class _LogInfoScreenState extends State<LogInfoScreen> {
                                 ),
                                 onPressed: () {
                                   setState(() {
-                                    _pestPumpState = !_pestPumpState;
-                                    _service.publish(
-                                        "${_pestPumpState ? "1" : "0"}");
+                                    _fanState = !_fanState;
+                                    _service
+                                        .publish("${_fanState ? "1" : "0"}");
                                   });
                                 },
                               ),
                               Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: Icon(
-                                  _pestPumpState
+                                  _fanState
                                       ? Icons.power_rounded
                                       : Icons.power_off_rounded,
                                   color: Colors.blue,
@@ -170,8 +178,9 @@ class _LogInfoScreenState extends State<LogInfoScreen> {
         backgroundColor: Colors.red,
         child: Icon(Icons.mic),
         onPressed: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => SpeechToTextPage()));
+          _showVoiceAlert();
+          // Navigator.push(context,
+          //     MaterialPageRoute(builder: (context) => SpeechToTextPage()));
         },
       ),
     );
